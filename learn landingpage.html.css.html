@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vantage Roastery — Learn HTML &amp; CSS</title>
+
+<!--
+  ============================================================
+  HOW TO USE THIS FILE
+  ============================================================
+  This is one HTML file that teaches HTML & CSS by building a
+  real, "complex" landing page for a fictional coffee roastery
+  called Vantage. Every CSS block has a comment above it
+  explaining WHAT the technique is and WHY it's used here.
+
+  Read top to bottom. Techniques covered, roughly in order:
+    1.  CSS custom properties (variables) & a design system
+    2.  The box model (border-box)
+    3.  Typography pairing & a type scale
+    4.  Flexbox (nav, steps, footer)
+    5.  CSS Grid (feature cards, pricing cards)
+    6.  Positioning (sticky nav, absolute badge)
+    7.  Pseudo-classes (:hover, :focus-visible, :nth-child)
+    8.  Pseudo-elements (::before, ::after)
+    9.  Gradients & clip-path (the roast-dial signature element)
+    10. Transitions & keyframe animation
+    11. Native HTML accordion (<details>/<summary>) — no JS needed
+    12. Media queries (responsive layout)
+    13. Accessibility basics (focus states, reduced motion)
+    14. A tiny bit of JS: IntersectionObserver for scroll-reveal
+
+  Open this file in a browser, then open devtools and change
+  values live to see what each rule controls.
+  ============================================================
+-->
+
+<style>
+
+  /* ============================================================
+     1. CUSTOM PROPERTIES — a mini design system
+     ------------------------------------------------------------
+     Variables defined on :root are global. Naming them by ROLE
+     (--color-accent) rather than by value (--orange) means you
+     can restyle the whole site by changing values in one place.
+  ============================================================ */
+  :root {
+    /* Color palette — named, not decorative */
+    --color-bg:        #FAF6F0; /* warm off-white page background */
+    --color-surface:   #FFFFFF; /* card backgrounds */
+    --color-espresso:  #2B1B14; /* near-black brown, primary text */
+    --color-brown:     #5C4030; /* secondary text / muted brown */
+    --color-amber:     #C17817; /* roasted amber — primary accent */
+    --color-sage:      #7C8B6F; /* soft sage — secondary accent */
+    --color-line:      #E4DACB; /* hairline borders */
+
+    /* Type scale — a fixed ratio keeps headings feeling related */
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body:     'Work Sans', -apple-system, sans-serif;
+
+    --step-0: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);      /* body */
+    --step-1: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);       /* h4 */
+    --step-2: clamp(1.75rem, 1.5rem + 1vw, 2.25rem);         /* h3 */
+    --step-3: clamp(2.25rem, 1.8rem + 2vw, 3.25rem);         /* h2 */
+    --step-4: clamp(2.75rem, 2rem + 3.5vw, 4.5rem);          /* h1 */
+
+    /* Layout tokens */
+    --radius: 14px;
+    --gutter: clamp(1.25rem, 2vw + 0.5rem, 3rem);
+    --max-w: 1200px;
+
+    /* Motion */
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ============================================================
+     2. THE BOX MODEL
+     ------------------------------------------------------------
+     By default, an element's declared width/height excludes its
+     padding and border ("content-box"), which makes sizing math
+     annoying. box-sizing: border-box makes width/height INCLUDE
+     padding + border instead. Almost every modern stylesheet
+     starts with this reset.
+  ============================================================ */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth; /* smooth-scrolls when jumping to #anchors */
+  }
+
+  /* Respect users who've asked their OS to reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: var(--step-0);
+    color: var(--color-espresso);
+    background: var(--color-bg);
+    line-height: 1.6;
+  }
+
+  img { max-width: 100%; display: block; }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* A reusable "container" class — centers content, caps its width */
+  .container {
+    max-width: var(--max-w);
+    margin-inline: auto;      /* shorthand for margin-left + margin-right */
+    padding-inline: var(--gutter);
+  }
+
+  section {
+    padding-block: clamp(3.5rem, 6vw, 7rem); /* vertical rhythm between sections */
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    line-height: 1.05;
+    font-weight: 600;
+  }
+
+  /* Focus-visible: shows a focus ring for KEYBOARD users only,
+     not for mouse clicks. This is an accessibility must-have. */
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 3px solid var(--color-amber);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* ============================================================
+     3. REUSABLE COMPONENTS: buttons, eyebrows, badges
+  ============================================================ */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-amber);
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  .eyebrow::before {
+    /* ::before generates a small decorative dash with no HTML markup */
+    content: "";
+    width: 24px;
+    height: 2px;
+    background: var(--color-amber);
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.9em 1.8em;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  }
+  .btn-primary {
+    background: var(--color-espresso);
+    color: var(--color-bg);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-espresso);
+    border-color: var(--color-espresso);
+  }
+  /* :hover pseudo-class — style applied only while the mouse is over it */
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(43, 27, 20, 0.4);
+  }
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  /* ============================================================
+     4. FLEXBOX — the navigation bar
+     ------------------------------------------------------------
+     Flexbox arranges items in a single row or column and is
+     ideal here: we want the logo on the left, links in the
+     middle-ish, and a button on the right, all vertically centered.
+  ============================================================ */
+  header {
+    position: sticky;  /* 6. POSITIONING: sticks to the viewport top on scroll */
+    top: 0;
+    z-index: 50;
+    background: rgba(250, 246, 240, 0.85);
+    backdrop-filter: blur(10px); /* frosted-glass effect over content behind it */
+    border-bottom: 1px solid var(--color-line);
+  }
+  nav {
+    display: flex;
+    align-items: center;      /* vertical centering on the cross axis */
+    justify-content: space-between; /* pushes children to opposite ends */
+    padding-block: 1.1rem;
+  }
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo-mark {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--color-amber);
+  }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none; /* remove bullet points from the <ul> */
+  }
+  .nav-links a {
+    font-size: 0.92rem;
+    font-weight: 500;
+    position: relative;
+  }
+  /* ::after used to draw an animated underline that grows on hover */
+  .nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: -4px;
+    width: 0%;
+    height: 2px;
+    background: var(--color-amber);
+    transition: width 0.3s var(--ease);
+  }
+  .nav-links a:hover::after { width: 100%; }
+
+  .nav-cta { display: flex; align-items: center; gap: 1rem; }
+  .nav-links-mobile-toggle { display: none; } /* only shown at small widths, see media query */
+
+  /* ============================================================
+     5. HERO — headline + the "roast dial" signature element
+     ------------------------------------------------------------
+     Signature element rationale: Vantage sells coffee at
+     different roast levels. A dial sweeping from light to dark
+     is literally the product's core variable, made visual —
+     more specific than a generic stat block.
+  ============================================================ */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr; /* text column wider than the dial */
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+    padding-block: clamp(3rem, 8vw, 6rem);
+  }
+  .hero h1 {
+    font-size: var(--step-4);
+    max-width: 14ch; /* ch unit ≈ character width; keeps headline lines short */
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--color-amber);
+  }
+  .hero p.lede {
+    margin-block: 1.5rem 2rem;
+    max-width: 44ch;
+    color: var(--color-brown);
+    font-size: 1.1rem;
+  }
+  .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  /* The dial itself: a circular gradient built with conic-gradient,
+     going from a light roast color to a near-black dark roast. */
+  .roast-dial {
+    position: relative;
+    width: min(100%, 340px);
+    aspect-ratio: 1 / 1;
+    margin-inline: auto;
+    border-radius: 50%;
+    background: conic-gradient(
+      from -90deg,
+      #E8C79A 0deg,      /* light roast */
+      #C17817 90deg,     /* medium */
+      #6B3A1F 200deg,    /* dark */
+      #2B1B14 260deg,    /* espresso */
+      transparent 260deg 360deg
+    );
+    display: grid;
+    place-items: center; /* shorthand centering both axes at once */
+  }
+  .roast-dial::before {
+    /* an inner circle to create a "donut" ring effect over the gradient */
+    content: "";
+    position: absolute;
+    inset: 22px; /* shorthand for top/right/bottom/left */
+    background: var(--color-bg);
+    border-radius: 50%;
+  }
+  .roast-dial-label {
+    position: relative; /* sits above ::before because of stacking order */
+    text-align: center;
+  }
+  .roast-dial-label .num {
+    font-family: var(--font-display);
+    font-size: 2.75rem;
+    display: block;
+  }
+  .roast-dial-label .cap {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-brown);
+  }
+
+  /* ============================================================
+     6. TRUST BAR — flex row that wraps on small screens
+  ============================================================ */
+  .trust-bar {
+    border-top: 1px solid var(--color-line);
+    border-bottom: 1px solid var(--color-line);
+    padding-block: 1.75rem;
+  }
+  .trust-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    color: var(--color-brown);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ============================================================
+     7. CSS GRID — feature cards
+     ------------------------------------------------------------
+     Grid (vs flexbox) is the right tool when you're laying out
+     a two-dimensional arrangement — rows AND columns — like a
+     card grid that should reflow from 3 columns to 1.
+  ============================================================ */
+  .section-head {
+    max-width: 60ch;
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+  .section-head h2 { font-size: var(--step-3); }
+  .section-head p { color: var(--color-brown); margin-top: 0.75rem; }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
+    gap: 1.5rem;
+  }
+  .feature-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius);
+    padding: 2rem;
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+  .feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -20px rgba(43, 27, 20, 0.25);
+  }
+  .feature-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-amber) 15%, transparent);
+    display: grid;
+    place-items: center;
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+  }
+  .feature-card h3 { font-size: var(--step-1); margin-bottom: 0.5rem; }
+  .feature-card p { color: var(--color-brown); font-size: 0.95rem; }
+
+  /* ============================================================
+     8. FLEXBOX — numbered process steps
+     ------------------------------------------------------------
+     Numbering is justified here because roasting genuinely is a
+     sequence: green beans → roast → rest → grind → ship. Order
+     carries real meaning, unlike a decorative 01/02/03.
+  ============================================================ */
+  .steps {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto; /* lets it scroll horizontally on narrow screens */
+    padding-bottom: 0.5rem;
+  }
+  .step {
+    flex: 1 1 0;
+    min-width: 220px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+  }
+  .step .step-num {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--color-amber);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+  .step h4 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+  .step p { font-size: 0.9rem; color: var(--color-brown); }
+
+  /* ============================================================
+     9. GRID — pricing cards with a "featured" variant
+     ------------------------------------------------------------
+     :nth-child() lets us style the middle card differently
+     without adding an extra class in the HTML.
+  ============================================================ */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+  .price-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius);
+    padding: 2.25rem 2rem;
+    display: flex;
+    flex-direction: column; /* flexbox INSIDE a grid item — they combine freely */
+    position: relative;
+  }
+  .pricing-grid .price-card:nth-child(2) {
+    background: var(--color-espresso);
+    color: var(--color-bg);
+    transform: scale(1.04);
+    box-shadow: 0 30px 60px -30px rgba(43, 27, 20, 0.5);
+  }
+  .pricing-grid .price-card:nth-child(2) .price-cta { color: var(--color-bg); }
+  .price-card .badge {
+    position: absolute; /* positioned relative to .price-card (position: relative) */
+    top: -12px; right: 24px;
+    background: var(--color-amber);
+    color: var(--color-espresso);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.35em 0.8em;
+    border-radius: 999px;
+  }
+  .price-card h3 { font-size: var(--step-1); }
+  .price-card .amount {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    margin-block: 0.75rem;
+  }
+  .price-card .amount span { font-size: 0.9rem; font-weight: 400; opacity: 0.7; }
+  .price-card ul {
+    list-style: none;
+    margin-block: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+  }
+  .price-card li::before {
+    content: "✓";
+    color: var(--color-amber);
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+  .price-card .btn { margin-top: auto; text-align: center; } /* pins button to card bottom */
+
+  /* ============================================================
+   CONTACT CSS
+  ===============================================================*/
+
+.contact {
+  padding-block: clamp(3.5rem, 6vw, 7rem);
+   scroll-margin-top: 90px;
+}
+
+.contact-container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+}
+
+/* ---- Left column: Info ---- */
+
+.contact-info h2 {
+  font-size: var(--step-3);
+  color: var(--color-espresso);
+  margin-bottom: 1rem;
+}
+
+.contact-info > p {
+  color: var(--color-brown);
+  margin-bottom: 2rem;
+  max-width: 40ch;
+}
+
+.contact-info ul {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.contact-info li {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-brown);
+}
+
+.contact-info li strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-espresso);
+  margin-bottom: 0.2rem;
+}
+
+/* ---- Right column: Form ---- */
+
+.contact-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+}
+
+.contact-form label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-espresso);
+  margin-bottom: 0.4rem;
+}
+
+.contact-form input,
+.contact-form textarea {
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  color: var(--color-espresso);
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 0.9em 1.1em;
+  transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.contact-form input::placeholder,
+.contact-form textarea::placeholder {
+  color: var(--color-brown);
+  opacity: 0.6;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--color-amber);
+  box-shadow: 0 0 0 3px rgba(193, 120, 23, 0.15);
+}
+
+.contact-form button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+
+  /* ============================================================
+     10. TESTIMONIALS — CSS Grid, auto-fit for a flexible count
+  ============================================================ */
+  .testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+  .testimonial {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    border: 1px solid var(--color-line);
+  }
+  .testimonial p.quote { font-size: 0.98rem; margin-bottom: 1rem; }
+  .testimonial .person {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--color-brown);
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-amber), var(--color-sage));
+  }
+
+  /* ============================================================
+     11. NATIVE ACCORDION — <details>/<summary>
+     ------------------------------------------------------------
+     No JavaScript required: <details> is a built-in, accessible,
+     keyboard-operable disclosure widget. We're only styling it.
+  ============================================================ */
+  .faq-list { max-width: 760px; margin-inline: auto; }
+  .faq-item {
+    border-bottom: 1px solid var(--color-line);
+  }
+  .faq-item summary {
+    cursor: pointer;
+    padding-block: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none; /* hides the default disclosure triangle */
+  }
+  .faq-item summary::-webkit-details-marker { display: none; } /* Safari/Chrome default marker */
+  .faq-item summary::after {
+    content: "+";
+    font-size: 1.4rem;
+    color: var(--color-amber);
+    transition: transform 0.3s var(--ease);
+  }
+  .faq-item[open] summary::after { transform: rotate(45deg); } /* becomes an "×" */
+  .faq-item p {
+    padding-bottom: 1.25rem;
+    color: var(--color-brown);
+    max-width: 60ch;
+  }
+
+  /* ============================================================
+     12. CTA BANNER — gradient background + keyframe animation
+  ============================================================ */
+  .cta-banner {
+    background: linear-gradient(120deg, var(--color-espresso), #472A1C);
+    color: var(--color-bg);
+    border-radius: 24px;
+    padding: clamp(2.5rem, 6vw, 4.5rem);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-banner h2 { font-size: var(--step-3); margin-bottom: 1rem; }
+  .cta-banner p { color: #E7D9CC; max-width: 50ch; margin-inline: auto 2rem; }
+  .cta-banner .btn-primary {
+    background: var(--color-amber);
+    color: var(--color-espresso);
+  }
+  /* A slow-drifting glow, purely decorative, behind the CTA content */
+  .cta-banner::before {
+    content: "";
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(193,120,23,0.35), transparent 70%);
+    top: -200px; right: -150px;
+    animation: drift 8s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    from { transform: translate(0, 0); }
+    to   { transform: translate(-40px, 30px); }
+  }
+
+  /* ============================================================
+     13. SCROLL-REVEAL utility class (paired with the JS below)
+     ------------------------------------------------------------
+     Elements start slightly lower & transparent, then animate
+     to their resting state once JS adds the .is-visible class.
+  ============================================================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ============================================================
+     FOOTER — flexbox, space-between, wraps on mobile
+  ============================================================ */
+  footer {
+    border-top: 1px solid var(--color-line);
+    padding-block: 3rem;
+  }
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+  .footer-cols {
+    display: flex;
+    gap: 3rem;
+    flex-wrap: wrap;
+  }
+  .footer-col h5 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-brown);
+    margin-bottom: 0.85rem;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; }
+  .footer-bottom {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-line);
+    font-size: 0.8rem;
+    color: var(--color-brown);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  /* ============================================================
+     14. MEDIA QUERIES — responsive breakpoints
+     ------------------------------------------------------------
+     Mobile styles are the default above; these queries override
+     rules ABOVE this point once the viewport shrinks past a
+     breakpoint. This is "desktop-first" for teaching clarity —
+     note comments call out what changes and why.
+  ============================================================ */
+
+  /* Tablet and below: hero and pricing drop to fewer columns */
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr; /* stack text above the dial */
+      text-align: center;
+    }
+    .hero .hero-actions,
+    .roast-dial { margin-inline: auto; }
+    .hero p.lede { margin-inline: auto; }
+    .feature-grid,
+    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+    .pricing-grid .price-card:nth-child(2) { transform: none; } /* remove "featured" scale on small screens */
+  }
+
+  /* Phones: single column everywhere, hide the desktop nav links */
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .feature-grid,
+    .pricing-grid { grid-template-columns: 1fr; }
+    .hero h1 { max-width: none; }
+    .footer-row { flex-direction: column; }
+  }
+
+</style>
+
+<!-- Google Fonts: a characterful display serif (Fraunces) paired with
+     a clean, neutral body sans-serif (Work Sans). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- ============ HEADER / NAV (flexbox) ============ -->
+  <header>
+    <nav class="container">
+      <a href="#" class="logo"><span class="logo-mark"></span>Vantage</a>
+      <ul class="nav-links">
+        <li><a href="#features">Roasts</a></li>
+        <li><a href="#how">Process</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="#pricing" class="btn btn-primary">Start subscription</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Small-batch, roasted weekly</span>
+        <h1>Coffee, dialed to <em>your</em> exact roast.</h1>
+        <p class="lede">Vantage roasts to order in batches under 12kg, ships within 48 hours of roasting, and lets you fine-tune the roast level — from bright and light to dark and bold — for every bag.</p>
+        <div class="hero-actions">
+          <a href="#pricing" class="btn btn-primary">Choose your roast</a>
+          <a href="#how" class="btn btn-secondary">See the process</a>
+        </div>
+      </div>
+
+      <!-- The signature element: a conic-gradient "roast dial" -->
+      <div class="roast-dial">
+        <div class="roast-dial-label">
+          <span class="num">4</span>
+          <span class="cap">roast levels</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TRUST BAR ============ -->
+    <section class="trust-bar" style="padding-block:0;">
+      <div class="trust-row">
+        <span>Roasted to order</span>
+        <span>Shipped within 48h</span>
+        <span>Direct-trade farms</span>
+        <span>Cancel anytime</span>
+      </div>
+    </section>
+
+    <!-- ============ FEATURES (CSS Grid) ============ -->
+    <section id="features">
+      <div class="section-head reveal">
+        <h2>Four roasts, one bean origin at a time</h2>
+        <p>Each origin is roasted across our full range so you can taste how roast level changes the same beans — this is where CSS Grid keeps three cards aligned no matter the content length.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">☀️</div>
+          <h3>Light roast</h3>
+          <p>Bright, floral, high acidity. Best for pour-over and light milk drinks.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🌤️</div>
+          <h3>Medium roast</h3>
+          <p>Balanced sweetness and body. Our most popular everyday roast.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🌙</div>
+          <h3>Dark roast</h3>
+          <p>Deep, low acidity, bold body. Built for espresso and milk drinks.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROCESS STEPS (flexbox, real sequence) ============ -->
+    <section id="how">
+      <div class="section-head reveal">
+        <h2>From farm to your cup, in five steps</h2>
+        <p>Numbered here because it's an actual sequence — each step depends on the one before it.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><span class="step-num">01</span><h4>Source</h4><p>Green beans bought direct from partner farms each season.</p></div>
+        <div class="step reveal"><span class="step-num">02</span><h4>Roast</h4><p>Small batches roasted to your chosen level, same week you order.</p></div>
+        <div class="step reveal"><span class="step-num">03</span><h4>Rest</h4><p>Beans rest 24–72 hours so CO₂ can escape before sealing.</p></div>
+        <div class="step reveal"><span class="step-num">04</span><h4>Pack</h4><p>Sealed in one-way valve bags to lock in freshness.</p></div>
+        <div class="step reveal"><span class="step-num">05</span><h4>Ship</h4><p>Out the door within 48 hours of roasting, every time.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ PRICING (Grid + nth-child variant) ============ -->
+    <section id="pricing">
+      <div class="section-head reveal">
+        <h2>Simple, honest pricing</h2>
+        <p>Pause, skip, or cancel a subscription any time — no phone call required.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card reveal">
+          <h3>Taster</h3>
+          <p class="amount">$14<span>/bag</span></p>
+          <ul>
+            <li>One 340g bag</li>
+            <li>Choose any roast level</li>
+            <li>One-time order</li>
+          </ul>
+          <a href="#" class="btn btn-secondary price-cta">Order once</a>
+        </div>
+        <div class="price-card reveal">
+          <span class="badge">Most popular</span>
+          <h3>Subscriber</h3>
+          <p class="amount">$11<span>/bag</span></p>
+          <ul>
+            <li>Two 340g bags monthly</li>
+            <li>Free shipping</li>
+            <li>Change roast level anytime</li>
+          </ul>
+          <a href="#" class="btn btn-primary price-cta">Subscribe</a>
+        </div>
+        <div class="price-card reveal">
+          <h3>Roastery Plus</h3>
+          <p class="amount">$9<span>/bag</span></p>
+          <ul>
+            <li>Four 340g bags monthly</li>
+            <li>Free shipping</li>
+            <li>Early access to new origins</li>
+          </ul>
+          <a href="#" class="btn btn-secondary price-cta">Subscribe</a>
+        </div>
+      </div>
+    </section>
+
+    <!--===================CONTACT SECTION==============-->
+
+<section id="contact">
+  <div class="contact-container">
+    
+    <!-- Left Side: Info -->
+    <div class="contact-info">
+      <h2>Get in Touch</h2>
+      <p>Have a question or want to work together? Drop us a message!</p>
+      
+      <ul class="contact-details">
+        <li>
+          <strong>Direct Email</strong>
+          hello@vantageroastery.com
+        </li>
+        <li>
+          <strong>Response Time</strong>
+          We usually reply within 24 hours
+        </li>
+      </ul>
+    </div>
+
+    <!-- Right Side: Form -->
+    <form class="contact-form" action="YOUR_ENDPOINT_HERE" method="POST">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" placeholder="Your Name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="5" placeholder="How can we help?" required></textarea>
+      </div>
+
+      <button type="submit">Send Message</button>
+    </form>
+
+  </div>
+</section>
+
+    <!-- ============ TESTIMONIALS ============ -->
+    <section>
+      <div class="section-head reveal">
+        <h2>What subscribers say</h2>
+      </div>
+      <div class="testimonial-grid">
+        <div class="testimonial reveal">
+          <p class="quote">"I never knew roast level mattered this much until I could actually pick it."</p>
+          <div class="person"><span class="avatar"></span>Dara O., Lagos</div>
+        </div>
+        <div class="testimonial reveal">
+          <p class="quote">"Bags arrive within days of roasting. It's a different drink entirely."</p>
+          <div class="person"><span class="avatar"></span>Femi A., Abuja</div>
+        </div>
+        <div class="testimonial reveal">
+          <p class="quote">"Easiest subscription I've ever paused and restarted."</p>
+          <div class="person"><span class="avatar"></span>Ngozi K., Lagos</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FAQ (native details/summary) ============ -->
+    <section id="faq">
+      <div class="section-head reveal">
+        <h2>Questions, answered</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item reveal">
+          <summary>Can I change my roast level each month?</summary>
+          <p>Yes — update it any time before your next roast date from your account.</p>
+        </details>
+        <details class="faq-item reveal">
+          <summary>Where do the beans come from?</summary>
+          <p>We buy directly from a rotating set of partner farms and publish the current origin on every bag.</p>
+        </details>
+        <details class="faq-item reveal">
+          <summary>How do I cancel?</summary>
+          <p>One click in your account settings — no calls, no retention flow.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ CTA BANNER ============ -->
+    <section class="reveal">
+      <div class="cta-banner">
+        <h2>Your first bag, roasted this week.</h2>
+        <p>Pick an origin, pick a roast level, and we'll have it on your doorstep in days, not weeks.</p>
+        <a href="#pricing" class="btn btn-primary">Start subscription</a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER (flexbox) ============ -->
+  <footer class="container">
+    <div class="footer-row">
+      <a href="#" class="logo"><span class="logo-mark"></span>Vantage</a>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h5>Product</h5>
+          <ul><li><a href="#features">Roasts</a></li><li><a href="#pricing">Pricing</a></li></ul>
+        </div>
+        <div class="footer-col">
+          <h5>Company</h5>
+          <ul><li><a href="#">About</a></li><li><a href="#">Farms</a></li></ul>
+        </div>
+        <div class="footer-col">
+          <h5>Support</h5>
+          <ul><li><a href="#faq">FAQ</a></li><li><a href="#contact">Contact</a></li></ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>This is a learning example — not a real store.</span>
+      <span>&copy; 2026 Vantage Roastery</span>
+    </div>
+  </footer>
+
+  <script>
+    // ============================================================
+    // 15. A LITTLE JAVASCRIPT: scroll-reveal with IntersectionObserver
+    // ------------------------------------------------------------
+    // Instead of listening to the scroll event (which fires constantly
+    // and is expensive), IntersectionObserver asks the browser to
+    // notify us only when an element enters/leaves the viewport.
+    // We just add a class; the actual animation lives in the
+    // .reveal / .reveal.is-visible CSS rules above.
+    // ============================================================
+    const revealEls = document.querySelectorAll('.reveal');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target); // only animate once
+        }
+      });
+    }, {
+      threshold: 0.15 // fire when 15% of the element is visible
+    });
+
+    revealEls.forEach((el) => observer.observe(el));
+  </script>
+
+</body>
+</html>
